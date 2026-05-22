@@ -637,7 +637,7 @@ class Factura(object):
     def is_only_conceptes(self):
         has_only_conceptes = True
         for type in self.get_linies_factura_by_type():
-            if type not in ['informacio', 'altres']:
+            if type not in ['informacio', 'altres', 'demora']:
                 has_only_conceptes = False
         return has_only_conceptes
 

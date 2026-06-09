@@ -625,10 +625,10 @@ class Factura(object):
             - data inici: la mes antiga de les fecdesde dels conceptes
             - data fi: la mes nova de les fechasta dels conceptes
         """
-        conceptes_atr = [x.fecdesde for x in self.listaconceptos if "tvariable" in TIPUS_CONCEPTES.get(x.codconcepto, "") or "tfix" in TIPUS_CONCEPTES.get(x.codconcepto, "")]
+        conceptes_atr = [(x.fecdesde, x.fechasta) for x in self.listaconceptos if "tvariable" in TIPUS_CONCEPTES.get(x.codconcepto, "") or "tfix" in TIPUS_CONCEPTES.get(x.codconcepto, "")]
         if not conceptes_atr:
-            conceptes_atr = [x.fecdesde for x in self.listaconceptos if x.codconcepto not in self.productes_exclosos]
-        return min(conceptes_atr), max(conceptes_atr)
+            conceptes_atr = [(x.fecdesde, x.fechasta) for x in self.listaconceptos if x.codconcepto not in self.productes_exclosos]
+        return min([x[0] for x in conceptes_atr]), max([x[1] for x in conceptes_atr])
 
     def is_only_conceptes(self):
         has_only_conceptes = True

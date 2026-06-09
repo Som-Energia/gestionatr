@@ -618,14 +618,17 @@ class Factura(object):
         for type, method in self.GETTERS_LINEAS_FACTURA:
             lines, sub_total = method()
 
-            if lines:
+            if lines or sub_total != 0.0:
                 if type in to_join.keys():
                     aux_res = res_to_join
                 else:
                     aux_res = res
 
                 aux_res.setdefault(type, {'total': 0.0, 'lines': []})
-
+                if not lines and sub_total != 0.0 and type == 'exces_potencia':
+                    aux_periodes, aux = self.get_all_info_exces()
+                    if aux_periodes:
+                        lines = [aux_periodes[0]]
                 aux_res[type]['lines'] += lines
                 new_total = aux_res[type]['total'] + sub_total
                 aux_res[type]['total'] = round(new_total, 2)
@@ -758,6 +761,9 @@ class Termino(object):
 
     @property
     def periodos(self):
+        return self.all_periodos(nomes_facturables=True)
+
+    def all_periodos(self, nomes_facturables=True):
         data = []
         periodes_no_facturables = []
         if hasattr(self.termino, 'Periodo'):
@@ -769,7 +775,7 @@ class Termino(object):
                 period = self.PERIODO_TYPE(
                     d, period_name, self.fecha_desde, self.fecha_hasta
                 )
-                if period.es_facturable():
+                if (period.es_facturable() and nomes_facturables) or not nomes_facturables:
                     data.append(period)
                     max_facturat = period_number
                 else:
@@ -2655,6 +2661,19 @@ class FacturaATR(Factura):
             if self.exceso_potencia:
                 for exc in self.exceso_potencia.terminos_exceso_potencia:
                     periodes += exc.periodos
+                total = self.exceso_potencia.importe_total
+        except AttributeError:
+            pass
+        return periodes, total
+
+    def get_all_info_exces(self):
+        """Retorna els periodes de potència"""
+        periodes = []
+        total = 0
+        try:
+            if self.exceso_potencia:
+                for exc in self.exceso_potencia.terminos_exceso_potencia:
+                    periodes += exc.all_periodos(nomes_facturables=False)
                 total = self.exceso_potencia.importe_total
         except AttributeError:
             pass

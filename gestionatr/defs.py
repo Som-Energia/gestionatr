@@ -816,11 +816,64 @@ TABLA_12 = [
 ]
 TIPO_VIA = TABLA_12
 
-# TABLA_13 ESCALERA Optional , thus not implemented
+# TABLA_13 ESCALERA Optional
+TABLA_13 = [
+    ('CTR', 'Centro'),
+    ('DCH', 'Derecha'),
+    ('EST', 'Este'),
+    ('EXT', 'Exterior'),
+    ('INT', 'Interior'),
+    ('IZQ', 'Izquierda'),
+    ('NOR', 'Norte'),
+    ('OES', 'Oeste'),
+    ('SUR', 'Sur'),
+    ('001', 'Una'),
+    ('002', 'Dos'),
+]
 
-# TABLA_14 PISO Optional , thus not implemented
+# TABLA_14 PISO Optional
+TABLA_14 = [
+    ('AT', 'Ático'),
+    ('BA', 'Bajo'),
+    ('EP', 'Entreplanta'),
+    ('ES', 'Entresuelo'),
+    ('LO', 'Local'),
+    ('PA', 'Patio'),
+    ('PR', 'Principal'),
+    ('S1', 'Sótano-1'),
+    ('S2', 'Sótano-2'),
+    ('S3', 'Sótano 3'),
+    ('S4', 'Sótano 4'),
+    ('S5', 'Sótano 5'),
+    ('S6', 'Sótano 6'),
+    ('SA', 'Sobre ático'),
+    ('SS', 'Semisótano'),
+]
 
-# TABLA_15 PUERTA Optional , thus not implemented
+
+# TABLA_15 PUERTA Optional
+TABLA_15 = [
+    ('ZA', 'Izq-Izq'),
+    ('ZB', 'Izq-Ctr'),
+    ('ZC', 'Izq-Dch'),
+    ('ZD', 'Izq'),
+    ('ZE', 'Ext-Izq'),
+    ('ZF', 'Ext-Ctr'),
+    ('ZG', 'Ext-Dch'),
+    ('ZH', 'Ext'),
+    ('ZI', 'Ctr-Izq'),
+    ('ZJ', 'Ctr'),
+    ('ZK', 'Ctr-Dch'),
+    ('ZL', 'Int'),
+    ('ZM', 'Int-Izq'),
+    ('ZN', 'Int-Ctr'),
+    ('ZO', 'Int-Dch'),
+    ('ZP', 'Dch'),
+    ('ZQ', 'Dch-Izq'),
+    ('ZR', 'Dch-Ctr'),
+    ('ZS', 'Dch-Dch'),
+]
+
 
 # TABLA_16 ACLARADOR DE FINCA Optional , thus not implemented
 

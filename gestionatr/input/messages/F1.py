@@ -294,6 +294,16 @@ class DatosGenerales(object):
         return None
 
     @property
+    def codigo_factura_abono(self):
+        has_attr = hasattr(
+            self._datos_generales_factura, 'CodigoFacturaAbono'
+        )
+        if has_attr:
+            datos_generales_fact = self._datos_generales_factura
+            return datos_generales_fact.CodigoFacturaAbono.text.strip()
+        return None
+
+    @property
     def expediente(self):
         if hasattr(self._datos_generales_factura, 'Expediente'):
             return Expediente(self._datos_generales_factura.Expediente)
@@ -608,14 +618,17 @@ class Factura(object):
         for type, method in self.GETTERS_LINEAS_FACTURA:
             lines, sub_total = method()
 
-            if lines:
+            if lines or sub_total != 0.0:
                 if type in to_join.keys():
                     aux_res = res_to_join
                 else:
                     aux_res = res
 
                 aux_res.setdefault(type, {'total': 0.0, 'lines': []})
-
+                if not lines and sub_total != 0.0 and type == 'exces_potencia':
+                    aux_periodes, aux = self.get_all_info_exces()
+                    if aux_periodes:
+                        lines = [aux_periodes[0]]
                 aux_res[type]['lines'] += lines
                 new_total = aux_res[type]['total'] + sub_total
                 aux_res[type]['total'] = round(new_total, 2)
@@ -748,6 +761,9 @@ class Termino(object):
 
     @property
     def periodos(self):
+        return self.all_periodos(nomes_facturables=True)
+
+    def all_periodos(self, nomes_facturables=True):
         data = []
         periodes_no_facturables = []
         if hasattr(self.termino, 'Periodo'):
@@ -759,7 +775,7 @@ class Termino(object):
                 period = self.PERIODO_TYPE(
                     d, period_name, self.fecha_desde, self.fecha_hasta
                 )
-                if period.es_facturable():
+                if (period.es_facturable() and nomes_facturables) or not nomes_facturables:
                     data.append(period)
                     max_facturat = period_number
                 else:
@@ -842,6 +858,18 @@ class PeriodoExcesoPotencia(Periodo):
         return None
 
     @property
+    def numero_dias(self):
+        if hasattr(self.periodo, 'NumeroDias'):
+            return float(self.periodo.NumeroDias.text.strip())
+        return None
+
+    @property
+    def precio_exceso(self):
+        if hasattr(self.periodo, 'PrecioExceso'):
+            return float(self.periodo.PrecioExceso.text.strip())
+        return None
+
+    @property
     def name(self):
         return self._name
 
@@ -856,6 +884,10 @@ class PeriodoExcesoPotencia(Periodo):
         el precio a 0"""
         return bool(self.valor_exceso_potencia)
 
+class TerminoExcesoPotencia(Termino):
+
+    PERIODO_TYPE = PeriodoExcesoPotencia
+
 
 class ExcesoPotencia(object):
 
@@ -865,36 +897,11 @@ class ExcesoPotencia(object):
         self.exceso_potencia = data
 
     @property
-    def periodos(self):
+    def terminos_exceso_potencia(self):
         data = []
-        periodes_no_facturables = []
-        if hasattr(self.exceso_potencia, 'Periodo'):
-            period_number = 1
-            max_facturat = period_number
-
-            for d in self.exceso_potencia.Periodo:
-                period_name = 'P{0}'.format(period_number)
-                period = self.PERIODO_TYPE(
-                    d, period_name
-                )
-                if period.es_facturable():
-                    data.append(period)
-                    max_facturat = period_number
-                else:
-                    periodes_no_facturables.append((d, period_number))
-                period_number += 1
-
-            if periodes_no_facturables:
-                max_no_facturat = max([x[1] for x in periodes_no_facturables])
-                # Per les 6.1 ens envien periodes amb preu i quantitat 0 pero si que els hem de gestionar
-                if max_facturat > max_no_facturat:
-                    for d, period_number in periodes_no_facturables:
-                        period_name = 'P{0}'.format(period_number)
-                        period = self.PERIODO_TYPE(
-                            d, period_name
-                        )
-                        data.append(period)
-
+        if hasattr(self.exceso_potencia, 'TerminoExcesoPotencia'):
+            for d in self.exceso_potencia.TerminoExcesoPotencia:
+                data.append(TerminoExcesoPotencia(d))
         return data
 
     @property
@@ -991,6 +998,12 @@ class PeriodoEnergiaAutoconsumida(Periodo):
     def pago_tda(self):
         if hasattr(self.periodo, 'PagoTDA'):
             return float(self.periodo.PagoTDA.text.strip())
+        return None
+
+    @property
+    def importe_energia_autoconsumida(self):
+        if hasattr(self.periodo, 'ImporteEnergiaAutoconsumida'):
+            return float(self.periodo.ImporteEnergiaAutoconsumida.text.strip())
         return None
 
 
@@ -1412,7 +1425,7 @@ class Lectura(object):
         if self._lectura is not None:
             return self._lectura
         if hasattr(self.lectura_data, 'Lectura'):
-            return int(float(self.lectura_data.Lectura.text.strip()))
+            return float(self.lectura_data.Lectura.text.strip())
         return None
 
     @lectura.setter
@@ -2646,7 +2659,21 @@ class FacturaATR(Factura):
         total = 0
         try:
             if self.exceso_potencia:
-                periodes += self.exceso_potencia.periodos
+                for exc in self.exceso_potencia.terminos_exceso_potencia:
+                    periodes += exc.periodos
+                total = self.exceso_potencia.importe_total
+        except AttributeError:
+            pass
+        return periodes, total
+
+    def get_all_info_exces(self):
+        """Retorna els periodes de potència"""
+        periodes = []
+        total = 0
+        try:
+            if self.exceso_potencia:
+                for exc in self.exceso_potencia.terminos_exceso_potencia:
+                    periodes += exc.all_periodos(nomes_facturables=False)
                 total = self.exceso_potencia.importe_total
         except AttributeError:
             pass
@@ -2795,6 +2822,12 @@ class ConceptoRepercutible(object):
     def concepto_repercutible(self):
         if hasattr(self.concepto, 'ConceptoRepercutible'):
             return self.concepto.ConceptoRepercutible.text.strip()
+        return None
+
+    @property
+    def codigo_de_solicitud(self):
+        if hasattr(self.concepto, 'CodigoDeSolicitud'):
+            return self.concepto.CodigoDeSolicitud.text.strip()
         return None
 
     @property

@@ -1,4 +1,4 @@
-lxml
+lxml<5.0.0
 libcomxml
 workdays
 click
